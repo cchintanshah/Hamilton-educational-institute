@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+
+<head>
+  <title>Educational Dataset of Hamilton</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<html>
+
+<body>
+  <div id='title'>
+    <h2> Education Institute in Hamilton</h2>
+  </div>
+
+  <div id='container'>
+
+    <div id='buttonCollection'>
+
+      <button onclick="getElementary()">Elementary Schools</button>
+      <button onclick="getMiddle()">Middle School</button>
+      <button onclick="getSecondary()">Secondary School</button>
+      <button onclick="getPostsecondary()">Post-Secondary</button>
+      <button onclick="getAlternative()">Alternative School</button>
+      <button onclick="getAdult()">Adult School</button>
+      <button onclick="getSection23()">Section 23 School</button>
+      <button onclick="allMapScenario()">All</button>
+    </div>
+
+
+    <div id='myMap'></div>
+
+    <div id='directioncontainer'>
+      <div id='header'>
+        <h2> Direction </h2><button onclick="clearDirection()">Clear Direction</button>
+
+      </div>
+      <div id='direction'>
+        <p id='scroll'></p>
+      </div>
+    </div>
+  </div>
+  <p id='error'></p>
+  </div>
+  <form id="form" action="">
+    Name:<br>
+    <input type="text" name="name"><br>
+    Address:<br>
+    <input type="text" name="address"><br><br>
+    <input type="button" onclick="formSubmit(); this.form.reset();" value="Submit">
+
+  </form>
+
+  <script type='text/javascript' src="education.js"></script>
+  <script type='text/javascript'>
+    var directionsManager, searchManager;
+
+
+
+    function formSubmit() {
+      var userInputName = document.forms['form'].elements['name'].value;
+      var userInputAddress = document.forms['form'].elements['address'].value;
+      geocodeQuery(userInputAddress, userInputName);
+    }
+
+
+    function geocodeQuery(query, name) {
+      if (!searchManager) {
+
+
+        Microsoft.Maps.loadModule('Microsoft.Maps.Search',
+          function () {
+            searchManager = new Microsoft.Maps.Search.SearchManager(map);
+            geocodeQuery(query, name);
+          });
+      }
+      else {
+        var searchRequest = {
+          where: query,
+          callback: function (r) {
+
+
+            if (r && r.results && r.results.length > 0) {
+
+              var pin = new Microsoft.Maps.Pushpin(r.results[0].location, { color: 'Green', title: name });
+              map.entities.push(pin);
+
+              map.setView({ bounds: r.results[0].bestView });
+            }
+          },
+          errorCallback: function (e) {
+
+
+            alert("No results found.");
+          }
+        };
+
+        searchManager.geocode(searchRequest);
+      }
+    }
+
+
+    function pageScroll() {
+      window.scrollTo(0, 600);
+    }
+
+
+    function loadMapScenario() {
+
+
+      window.map = new Microsoft.Maps.Map(document.getElementById('myMap'), { center: new Microsoft.Maps.Location(43.2557, -79.871) });
+
+      function success(pos) {
+        window.loc = new Microsoft.Maps.Location(pos.coords.latitude, pos.coords.longitude);
+
+        window.pin = new Microsoft.Maps.Pushpin(loc, { color: 'blue' });
+
+        pin.metadata = {
+          title: 'Current Location',
+          description: "Latitude: " + pos.coords.latitude + "<br>" + "Longitude: " + pos.coords.longitude
+        }
+
+        Microsoft.Maps.Events.addHandler(pin, 'click', pushpinClicked);
+
+        map.entities.push(pin);
+
+        map.setView({ zoom: 15 });
+      }
+      function error(err) {
+
+        document.getElementById('error').innerHTML = "The Location acquisition process <b>Failed</b> Because the Documnet does<br> not have permission to use the Location API";
+        pageScroll();
+        map.setView({ zoom: 15 });
+      }
+
+      navigator.geolocation.getCurrentPosition(success, error);
+
+
+      window.infobox = new Microsoft.Maps.Infobox(map.getCenter(), {
+        visible: false
+      });
+
+
+      infobox.setMap(map);
+
+      for (i = 0; i < education.length; i++) {
+
+        var location = new Microsoft.Maps.Location(
+          education[i].LATITUDE,
+          education[i].LONGITUDE
+        );
+
+        var pushpin = new Microsoft.Maps.Pushpin(
+          location
+          , { title: education[i].NAME });
+
+        pushpin.metadata = {
+
+          description: "<a href='" + education[i].WEBSITE + "' target='_blank'>" + education[i].NAME + "</a>" + "<br>" + 'Address: ' + education[i].ADDRESS + "<br>" + 'Community: ' + education[i].COMMUNITY + "<br>" + 'Category: ' + education[i].CATEGORY + "<br>" + "<a href='#' onclick='return directions(" + education[i].LATITUDE + "," + education[i].LONGITUDE + ");" + "'>directions</a>"
+        };
+
+
+        Microsoft.Maps.Events.addHandler(pushpin, 'click', pushpinClicked);
+        map.entities.push(pushpin);
+
+
+      }
+    }
+    function pushpinClicked(e) {
+
+
+      if (e.target.metadata) {
+
+        infobox.setOptions({
+          location: e.target.getLocation(),
+          description: e.target.metadata.description,
+          visible: true
+        });
+
+      }
+      clearDirection();
+    }
+
+
+
+
+
+    function directions(lat, long) {
+
+      infobox.setOptions({ visible: false });
+      Microsoft.Maps.loadModule('Microsoft.Maps.Directions', function () {
+        window.directionsManager =
+          new Microsoft.Maps.Directions.DirectionsManager(map);
+
+
+
+
+        var mylocationpoint =
+          new Microsoft.Maps.Directions.Waypoint({ address: 'Your Current Location', location: new Microsoft.Maps.Location(loc.latitude, loc.longitude) });
+        directionsManager.addWaypoint(mylocationpoint);
+
+        var destinationpoint =
+          new Microsoft.Maps.Directions.Waypoint({ address: 'Destination', location: new Microsoft.Maps.Location(lat, long) });
+        directionsManager.addWaypoint(destinationpoint);
+
+
+        directionsManager.setRenderOptions({ itineraryContainer: '#scroll' });
+        directionsManager.calculateDirections();
+      });
+    }
+    function clearDirection() {
+
+
+      if (directionsManager) {
+        document.getElementById('scroll').innerHTML = "";
+
+        window.directionsManager.clearAll();
+      }
+    }
+
+
+    function allMapScenario() {
+
+
+
+      for (i = 0; i < education.length; i++) {
+
+
+        var location = new Microsoft.Maps.Location(
+          education[i].LATITUDE,
+          education[i].LONGITUDE
+        );
+
+
+
+
+        var pushpin = new Microsoft.Maps.Pushpin(
+          location
+          , { title: education[i].NAME });
+
+
+
+        pushpin.metadata = {
+
+          description: "<a href='" + education[i].WEBSITE + "'target='_blank'>" + education[i].NAME + "</a>" + "<br>" + 'Address: ' + education[i].ADDRESS + "<br>" + 'Community: ' + education[i].COMMUNITY + "<br>" + 'Category: ' + education[i].CATEGORY + "<br>" + "<a href='#' onclick='return directions(" + education[i].LATITUDE + "," + education[i].LONGITUDE + ");" + "'>directions</a>"
+
+        };
+
+        //Add a click event handler to the pushpin.
+        Microsoft.Maps.Events.addHandler(pushpin, 'click', pushpinClicked);
+
+
+
+        map.entities.push(pushpin);
+
+      }
+
+      if (!window.loc) {
+        document.getElementById('error').innerHTML = "The Location acquisition process <b>failed</b> Because the Documnet does<br> not have permission to use the Location API";
+
+        map.setView({ zoom: 15 });
+        pageScroll();
+      }
+      else {
+        var pin = new Microsoft.Maps.Pushpin(window.loc, { color: 'blue' });
+        map.entities.push(pin);
+
+        map.setView({ zoom: 15 });
+      }
+      clearDirection();
+
+    }
+    function getElementary() {
+
+      for (var i = window.map.entities.getLength() - 1; i >= 0; i--) {
+        var pushpin = window.map.entities.get(i);
+        if (pushpin instanceof Microsoft.Maps.Pushpin) {
+          map.entities.removeAt(i);
+        }
+      }
+      for (i = 0; i < education.length; i++) {
+
+
+        if (education[i].CATEGORY == "Elementary School") {
+
+          var location = new Microsoft.Maps.Location(
+            education[i].LATITUDE,
+            education[i].LONGITUDE
+          );
+
+
+          window.map.entities.push(window.pin);
+          window.pin = new Microsoft.Maps.Pushpin(location, { title: education[i].NAME });
+          window.pin.metadata = {
+
+            description: "<a href='" + education[i].WEBSITE + "'target='_blank'>" + education[i].NAME + "</a>" + "<br>" + 'Address: ' + education[i].ADDRESS + "<br>" + 'Community: ' + education[i].COMMUNITY + "<br>" + 'Category: ' + education[i].CATEGORY + "<br>" + "<a href='#' onclick='return directions(" + education[i].LATITUDE + "," + education[i].LONGITUDE + ");" + "'>directions</a>"
+
+          };
+
+          //Add a click event handler to the pushpin.
+          Microsoft.Maps.Events.addHandler(window.pin, 'click', pushpinClicked);
+          map.setView({
+            center: new Microsoft.Maps.Location(43.2557, -79.871),
+            zoom: 12
+          });
+
+        }
+
+      }
+      clearDirection();
+    }
+    function getMiddle() {
+
+      for (var i = window.map.entities.getLength() - 1; i >= 0; i--) {
+        var pushpin = window.map.entities.get(i);
+        if (pushpin instanceof Microsoft.Maps.Pushpin) {
+          map.entities.removeAt(i);
+        }
+      }
+
+
+      for (i = 0; i < education.length; i++) {
+
+
+        if (education[i].CATEGORY == "Middle School") {
+
+          var location = new Microsoft.Maps.Location(
+            education[i].LATITUDE,
+            education[i].LONGITUDE
+          );
+
+          window.pin = new Microsoft.Maps.Pushpin(location, { title: education[i].NAME });
+          window.map.entities.push(window.pin);
+          window.pin.metadata = {
+            description: "<a href='" + education[i].WEBSITE + "'target='_blank'>" + education[i].NAME + "</a>" + "<br>" + 'Address: ' + education[i].ADDRESS + "<br>" + 'Community: ' + education[i].COMMUNITY + "<br>" + 'Category: ' + education[i].CATEGORY + "<br>" + "<a href='#' onclick='return directions(" + education[i].LATITUDE + "," + education[i].LONGITUDE + ");" + "'>directions</a>"
+          };
+          Microsoft.Maps.Events.addHandler(window.pin, 'click', pushpinClicked);
+          map.setView({
+            center: new Microsoft.Maps.Location(43.2557, -79.871),
+            zoom: 11
+          });
+
+        }
+
+      }
+      clearDirection();
+    }
+
+    function getSecondary() {
+
+      for (var i = window.map.entities.getLength() - 1; i >= 0; i--) {
+        var pushpin = window.map.entities.get(i);
+        if (pushpin instanceof Microsoft.Maps.Pushpin) {
+          map.entities.removeAt(i);
+        }
+      }
+
+      //Add all pushpin for middle school only
+      for (i = 0; i < education.length; i++) {
+
+
+        if (education[i].CATEGORY == "Secondary School") {
+
+          var location = new Microsoft.Maps.Location(
+            education[i].LATITUDE,
+            education[i].LONGITUDE
+          );
+
+          window.pin = new Microsoft.Maps.Pushpin(location, { title: education[i].NAME });
+          window.map.entities.push(window.pin);
+          window.pin.metadata = {
+            description: "<a href='" + education[i].WEBSITE + "'target='_blank'>" + education[i].NAME + "</a>" + "<br>" + 'Address: ' + education[i].ADDRESS + "<br>" + 'Community: ' + education[i].COMMUNITY + "<br>" + 'Category: ' + education[i].CATEGORY + "<br>" + "<a href='#' onclick='return directions(" + education[i].LATITUDE + "," + education[i].LONGITUDE + ");" + "'>directions</a>"
+          };
+          Microsoft.Maps.Events.addHandler(window.pin, 'click', pushpinClicked);
+          map.setView({
+            center: new Microsoft.Maps.Location(43.2557, -79.871),
+            zoom: 11
+          });
+
+        }
+
+      }
+      clearDirection();
+    }
+    function getPostsecondary() {
+
+
+      for (var i = window.map.entities.getLength() - 1; i >= 0; i--) {
+        var pushpin = window.map.entities.get(i);
+        if (pushpin instanceof Microsoft.Maps.Pushpin) {
+          map.entities.removeAt(i);
+        }
+      }
+
+      //Add all pushpin for middle school only
+      for (i = 0; i < education.length; i++) {
+
+
+        if (education[i].CATEGORY == "Post Secondary") {
+
+          var location = new Microsoft.Maps.Location(
+            education[i].LATITUDE,
+            education[i].LONGITUDE
+          );
+
+          window.pin = new Microsoft.Maps.Pushpin(location, { title: education[i].NAME });
+          window.map.entities.push(window.pin);
+          window.pin.metadata = {
+            description: "<a href='" + education[i].WEBSITE + "'target='_blank'>" + education[i].NAME + "</a>" + "<br>" + 'Address: ' + education[i].ADDRESS + "<br>" + 'Community: ' + education[i].COMMUNITY + "<br>" + 'Category: ' + education[i].CATEGORY + "<br>" + "<a href='#' onclick='return directions(" + education[i].LATITUDE + "," + education[i].LONGITUDE + ");" + "'>directions</a>"
+          };
+          Microsoft.Maps.Events.addHandler(window.pin, 'click', pushpinClicked);
+          map.setView({
+            center: new Microsoft.Maps.Location(43.2557, -79.871),
+            zoom: 11
+          });
+
+        }
+
+
+
+      }
+      clearDirection();
+    }
+
+    function getAlternative() {
+
+      for (var i = window.map.entities.getLength() - 1; i >= 0; i--) {
+        var pushpin = window.map.entities.get(i);
+        if (pushpin instanceof Microsoft.Maps.Pushpin) {
+          map.entities.removeAt(i);
+        }
+      }
+
+      //Add all pushpin for middle school only
+      for (i = 0; i < education.length; i++) {
+
+
+        if (education[i].CATEGORY == "Alternative Education") {
+
+          var location = new Microsoft.Maps.Location(
+            education[i].LATITUDE,
+            education[i].LONGITUDE
+          );
+
+          window.pin = new Microsoft.Maps.Pushpin(location, { title: education[i].NAME });
+          window.map.entities.push(window.pin);
+          window.pin.metadata = {
+            description: "<a href='" + education[i].WEBSITE + "'target='_blank'>" + education[i].NAME + "</a>" + "<br>" + 'Address: ' + education[i].ADDRESS + "<br>" + 'Community: ' + education[i].COMMUNITY + "<br>" + 'Category: ' + education[i].CATEGORY + "<br>" + "<a href='#' onclick='return directions(" + education[i].LATITUDE + "," + education[i].LONGITUDE + ");" + "'>directions</a>"
+          };
+          Microsoft.Maps.Events.addHandler(window.pin, 'click', pushpinClicked);
+          map.setView({
+            center: new Microsoft.Maps.Location(43.2557, -79.871),
+            zoom: 11
+          });
+
+        }
+
+      }
+      clearDirection();
+    }
+
+
+    function getAdult() {
+
+
+      for (var i = window.map.entities.getLength() - 1; i >= 0; i--) {
+        var pushpin = window.map.entities.get(i);
+        if (pushpin instanceof Microsoft.Maps.Pushpin) {
+          map.entities.removeAt(i);
+        }
+      }
+
+      //Add all pushpin for middle school only
+      for (i = 0; i < education.length; i++) {
+
+
+        if (education[i].CATEGORY == "Adult Learning") {
+
+          var location = new Microsoft.Maps.Location(
+            education[i].LATITUDE,
+            education[i].LONGITUDE
+          );
+
+          window.pin = new Microsoft.Maps.Pushpin(location, { title: education[i].NAME });
+          window.map.entities.push(window.pin);
+          window.pin.metadata = {
+            description: "<a href='" + education[i].WEBSITE + "'target='_blank'>" + education[i].NAME + "</a>" + "<br>" + 'Address: ' + education[i].ADDRESS + "<br>" + 'Community: ' + education[i].COMMUNITY + "<br>" + 'Category: ' + education[i].CATEGORY + "<br>" + "<a href='#' onclick='return directions(" + education[i].LATITUDE + "," + education[i].LONGITUDE + ");" + "'>directions</a>"
+          };
+          Microsoft.Maps.Events.addHandler(window.pin, 'click', pushpinClicked);
+          map.setView({
+            center: new Microsoft.Maps.Location(43.2557, -79.871),
+            zoom: 11
+          });
+
+        }
+
+      }
+      clearDirection();
+    }
+
+    function getSection23() {
+
+      for (var i = window.map.entities.getLength() - 1; i >= 0; i--) {
+        var pushpin = window.map.entities.get(i);
+        if (pushpin instanceof Microsoft.Maps.Pushpin) {
+          map.entities.removeAt(i);
+        }
+      }
+
+      //Add all pushpin for middle school only
+      for (i = 0; i < education.length; i++) {
+
+
+        if (education[i].CATEGORY == "Section 23 Program") {
+
+          var location = new Microsoft.Maps.Location(
+            education[i].LATITUDE,
+            education[i].LONGITUDE
+          );
+
+          window.pin = new Microsoft.Maps.Pushpin(location, { title: education[i].NAME });
+          window.map.entities.push(window.pin);
+          window.pin.metadata = {
+            description: "<a href='" + education[i].WEBSITE + "'target='_blank'>" + education[i].NAME + "</a>" + "<br>" + 'Address: ' + education[i].ADDRESS + "<br>" + 'Community: ' + education[i].COMMUNITY + "<br>" + 'Category: ' + education[i].CATEGORY + "<br>" + "<a href='#' onclick='return directions(" + education[i].LATITUDE + "," + education[i].LONGITUDE + ");" + "'>directions</a>"
+          };
+          Microsoft.Maps.Events.addHandler(window.pin, 'click', pushpinClicked);
+          map.setView({
+            center: new Microsoft.Maps.Location(43.2557, -79.871),
+            zoom: 11
+          });
+
+        }
+
+      }
+      clearDirection();
+    }
+
+  </script>
+  <script type='text/javascript'
+    src='https://www.bing.com/api/maps/mapcontrol?key=AotTmutgnuDgvQx4s6DdZNDoqIxu1NKvtnFnX6Mcp-VR5iNvuZl3evXEKYvQ-Kr8&callback=loadMapScenario'
+    async defer></script>
+</body>
+
+</html>
